@@ -1,21 +1,13 @@
 #include "cpu.h"
 
-void CPU::reset()
+Memory memory;
+CPU cpu;
+
+void NOP(CPU &cpu, Memory &mem)
 {
-    AF = 0x00;
-    BC = 0x00;
-    DE = 0x00;
-    HL = 0x00;
-    SP = 0x00;
-    PC = 0x00;
 }
 
-void NOP(CPU &cpu)
-{
-    return;
-}
-
-typedef void (*Instruction)(CPU &);
+typedef void (*Instruction)(CPU &, Memory &);
 
 Instruction opcode_table[256] = {NOP /* default all to NOP for now */};
 
@@ -26,10 +18,18 @@ void initialize_opcode_table()
     // ... fill in the rest
 }
 
-void execute_instruction(CPU &cpu, uint8_t opcode)
+void CPU::reset()
 {
-    opcode_table[opcode](cpu);
+    AF = 0x00;
+    BC = 0x00;
+    DE = 0x00;
+    HL = 0x00;
+    SP = 0x00;
+    PC = 0x00;
 }
 
-Memory memory;
-CPU cpu;
+void CPU::step(Memory &memory)
+{
+    uint8_t opcode = memory.read(cpu.PC);
+    opcode_table[opcode](*this, memory);
+}
