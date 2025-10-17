@@ -1,8 +1,18 @@
 #include "cpu.h"
 
+void CPU::reset()
+{
+    AF = 0x00;
+    BC = 0x00;
+    DE = 0x00;
+    HL = 0x00;
+    SP = 0x00;
+    PC = 0x00;
+}
+
 void NOP(CPU &cpu)
 {
-    cpu.PC++; // NOP takes 1 byte
+    return;
 }
 
 typedef void (*Instruction)(CPU &);
@@ -16,8 +26,10 @@ void initialize_opcode_table()
     // ... fill in the rest
 }
 
-// Execute an instruction
 void execute_instruction(CPU &cpu, uint8_t opcode)
 {
     opcode_table[opcode](cpu);
 }
+
+Memory memory;
+CPU cpu;
