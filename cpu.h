@@ -36,10 +36,12 @@ struct CPU
         uint16_t HL;
     };
 
-    uint16_t SP; // Stack Pointer
-    uint16_t PC; // Program Counter/Pointer
+    uint16_t SP;         // Stack Pointer
+    uint16_t PC;         // Program Counter/Pointer
+    uint64_t cycles = 0; // Cycle counts since reset, for syncing processes
 
-    void reset();
+    void
+    reset();
     void step(Memory &memory);
 
     // Flag inline functions
