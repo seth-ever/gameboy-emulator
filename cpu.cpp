@@ -13,24 +13,10 @@ void NOP(CPU &cpu, Memory &mem, uint8_t opcode)
 
 void ld_r16_imm16(CPU &cpu, Memory &mem, uint8_t opcode)
 {
-    uint8_t regVal = (opcode & 0x30) >> 4;
+    uint8_t regVal = (opcode >> 4) & 0x03;
     uint16_t value = mem.read(cpu.PC + 1) | (mem.read(cpu.PC + 2) << 8);
 
-    switch (regVal)
-    {
-    case 0:
-        cpu.BC = value;
-        break;
-    case 1:
-        cpu.DE = value;
-        break;
-    case 2:
-        cpu.HL = value;
-        break;
-    case 3:
-        cpu.SP = value;
-        break;
-    }
+    cpu.setRegister16(regVal, value);
 
     cpu.PC += 3;
     cpu.cycles += 12;
@@ -38,24 +24,13 @@ void ld_r16_imm16(CPU &cpu, Memory &mem, uint8_t opcode)
 
 void ld_r16mem_a(CPU &cpu, Memory &mem, uint8_t opcode)
 {
-    uint8_t regVal = (opcode & 0x30) >> 4;
+    uint8_t regVal = (opcode >> 4) & 0x03;
 
-    uint16_t address = 0;
-    switch (regVal)
-    {
-    case 0:
-        address = cpu.BC;
-        break;
-    case 1:
-        address = cpu.DE;
-        break;
-    case 2:
-        address = cpu.HL++;
-        break;
-    case 3:
-        address = cpu.HL--;
-        break;
-    }
+    uint16_t address = cpu.getRegister16mem(regVal);
+    if (regVal == 2)
+        cpu.HL++;
+    else if (regVal == 3)
+        cpu.HL--;
 
     mem.write(address, cpu.A);
 
@@ -65,24 +40,13 @@ void ld_r16mem_a(CPU &cpu, Memory &mem, uint8_t opcode)
 
 void ld_a_r16mem(CPU &cpu, Memory &mem, uint8_t opcode)
 {
-    uint8_t regVal = (opcode & 0x30) >> 4;
+    uint8_t regVal = (opcode >> 4) & 0x03;
 
-    uint16_t address = 0;
-    switch (regVal)
-    {
-    case 0:
-        address = cpu.BC;
-        break;
-    case 1:
-        address = cpu.DE;
-        break;
-    case 2:
-        address = cpu.HL++;
-        break;
-    case 3:
-        address = cpu.HL--;
-        break;
-    }
+    uint16_t address = cpu.getRegister16mem(regVal);
+    if (regVal == 2)
+        cpu.HL++;
+    else if (regVal == 3)
+        cpu.HL--;
 
     cpu.A = mem.read(address);
 
@@ -92,8 +56,8 @@ void ld_a_r16mem(CPU &cpu, Memory &mem, uint8_t opcode)
 
 void ld_imm16_sp(CPU &cpu, Memory &mem, uint8_t opcode)
 {
-    uint16_t adress = mem.read(cpu.PC + 1) | (mem.read(cpu.PC + 2) << 8);
-    mem.writeWord(adress, cpu.SP);
+    uint16_t address = mem.read(cpu.PC + 1) | (mem.read(cpu.PC + 2) << 8);
+    mem.writeWord(address, cpu.SP);
 
     cpu.PC += 3;
     cpu.cycles += 20;
@@ -101,23 +65,10 @@ void ld_imm16_sp(CPU &cpu, Memory &mem, uint8_t opcode)
 
 void inc_r16(CPU &cpu, Memory &mem, uint8_t opcode)
 {
-    uint8_t regVal = (opcode & 0x30) >> 4;
+    uint8_t regVal = (opcode >> 4) & 0x03;
 
-    switch (regVal)
-    {
-    case 0:
-        cpu.BC++;
-        break;
-    case 1:
-        cpu.DE++;
-        break;
-    case 2:
-        cpu.HL++;
-        break;
-    case 3:
-        cpu.SP++;
-        break;
-    }
+    uint16_t value = cpu.getRegister16(regVal);
+    cpu.setRegister16(regVal, (value + 1));
 
     cpu.PC += 1;
     cpu.cycles += 8;
@@ -125,23 +76,10 @@ void inc_r16(CPU &cpu, Memory &mem, uint8_t opcode)
 
 void dec_r16(CPU &cpu, Memory &mem, uint8_t opcode)
 {
-    uint8_t regVal = (opcode & 0x30) >> 4;
+    uint8_t regVal = (opcode >> 4) & 0x03;
 
-    switch (regVal)
-    {
-    case 0:
-        cpu.BC--;
-        break;
-    case 1:
-        cpu.DE--;
-        break;
-    case 2:
-        cpu.HL--;
-        break;
-    case 3:
-        cpu.SP--;
-        break;
-    }
+    uint16_t value = cpu.getRegister16(regVal);
+    cpu.setRegister16(regVal, (value - 1));
 
     cpu.PC += 1;
     cpu.cycles += 8;
@@ -149,36 +87,74 @@ void dec_r16(CPU &cpu, Memory &mem, uint8_t opcode)
 
 void add_hl_r16(CPU &cpu, Memory &mem, uint8_t opcode)
 {
-    uint8_t regVal = (opcode & 0x30) >> 4;
-    uint16_t value;
-
-    switch (regVal)
-    {
-    case 0:
-        value = cpu.BC;
-        break;
-    case 1:
-        value = cpu.DE;
-        break;
-    case 2:
-        value = cpu.HL;
-        break;
-    case 3:
-        value = cpu.SP;
-        break;
-    }
+    uint8_t regVal = (opcode >> 4) & 0x03;
+    uint16_t value = cpu.getRegister16(regVal);
 
     uint32_t result = cpu.HL + value;
 
     // Flags
-    cpu.setSubtract(false);                                            // Always clear
-    cpu.setHalfCarry(((cpu.HL & 0x0FFF) + (value & 0x0FFF)) > 0x0FFF); // if carry from 11 -> 12
-    cpu.setCarry(result > 0xFFFF);                                     // if carry from bit 15
+    cpu.setSubtract(false);
+    cpu.setHalfCarry(((cpu.HL & 0x0FFF) + (value & 0x0FFF)) > 0x0FFF);
+    cpu.setCarry(result > 0xFFFF);
 
     cpu.HL = static_cast<uint16_t>(result);
 
     cpu.PC += 1;
     cpu.cycles += 8;
+}
+
+void inc_r8(CPU &cpu, Memory &mem, uint8_t opcode)
+{
+    uint8_t regVal = (opcode >> 3) & 7;
+    uint8_t value = cpu.getRegister8(regVal, mem);
+
+    uint16_t result = value + 1;
+
+    cpu.setZero(result == 0);
+    cpu.setSubtract(false);
+    cpu.setHalfCarry((value & 0x0F) + 1 > 0x0F);
+
+    cpu.setRegister8(regVal, static_cast<uint8_t>(result), mem);
+
+    cpu.PC += 1;
+    if (regVal == 6)
+        cpu.cycles += 12;
+    else
+        cpu.cycles += 4;
+}
+
+void dec_r8(CPU &cpu, Memory &mem, uint8_t opcode)
+{
+    uint8_t regVal = (opcode >> 3) & 7;
+    uint8_t value = cpu.getRegister8(regVal, mem);
+
+    uint16_t result = value - 1;
+
+    cpu.setZero(result == 0);
+    cpu.setSubtract(true);
+    cpu.setHalfCarry((value & 0x0F) == 0x00);
+
+    cpu.setRegister8(regVal, static_cast<uint8_t>(result), mem);
+
+    cpu.PC += 1;
+    if (regVal == 6)
+        cpu.cycles += 12;
+    else
+        cpu.cycles += 4;
+}
+
+void ld_r8_imm8(CPU &cpu, Memory &mem, uint8_t opcode)
+{
+    uint8_t regVal = (opcode >> 3) & 7;
+    uint8_t value = mem.read(cpu.PC + 1);
+
+    cpu.setRegister8(regVal, value, mem);
+
+    cpu.PC += 2;
+    if (regVal == 6)
+        cpu.cycles += 12;
+    else
+        cpu.cycles += 8;
 }
 
 typedef void (*Instruction)(CPU &, Memory &, uint8_t opcode);
@@ -219,6 +195,20 @@ void initialize_opcode_table()
     for (uint8_t i = 0x09; i <= 0x39; i += 0x10) // add_hl_r16
     {
         opcode_table[i] = add_hl_r16;
+    }
+
+    for (uint8_t i = 0x04; i <= 0x3C; i += 0x08)
+    {
+        opcode_table[i] = inc_r8;
+    }
+
+    for (uint8_t i = 0x05; i <= 0x3D; i += 0x08)
+    {
+        opcode_table[i] = dec_r8;
+    }
+    for (uint8_t i = 5; i <= 0x3E; i += 0x08)
+    {
+        opcode_table[i] = ld_r8_imm8;
     }
 }
 
