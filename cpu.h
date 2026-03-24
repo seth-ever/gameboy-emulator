@@ -1,8 +1,10 @@
 #include <cstdint>
+#include <iostream>
 #include "memory.h"
 
 struct CPU
 {
+    // REGISTERS
     union
     {
         struct
@@ -39,6 +41,9 @@ struct CPU
     uint16_t SP;         // Stack Pointer
     uint16_t PC;         // Program Counter/Pointer
     uint64_t cycles = 0; // Cycle counts since reset, for syncing processes
+
+    bool halted = false;
+    bool locked = false;
 
     void
     reset();
@@ -126,9 +131,9 @@ struct CPU
         case 1:
             return DE;
         case 2:
-            return HL; // HL++
+            return HL; // HL++ DO IN OPERATION
         case 3:
-            return HL; // HL--
+            return HL; // HL-- DO IN OPERATION
         default:
             return 0;
         }
@@ -152,6 +157,22 @@ struct CPU
             break;
         }
     }
+
+    /*
+    FLAGS
+    Bit:    Name:   Explenation
+    7,      z,      Zero Flag
+    6,      n,      Subtraction Flag (BCD)
+    5,      h,      Half Carry Flag (BCD)
+    4,      c,      Carry Flag
+
+
+    BCD FLAGS (n,h) are used by the DAA instruciton only.
+    After adding/subtracting two BCD numbers, DAA is used to convert the result
+    to BCD format. BCD numbers range from $00 to $99 rather than $00 to $FF.
+
+    BCD, binary coded decimal. 01000010 = 0100 0010 = 42.
+    */
 
     // Flag inline functions
     inline bool getZero() { return F & 0x80; }      // Bit 7
