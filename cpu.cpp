@@ -316,9 +316,37 @@ void rra(CPU &cpu, Memory &mem, uint8_t opcode)
     cpu.cycles += 4;
 }
 
-void daa(CPU &cpu, Memory &mem, uint8_t opcode) // TO BE IMPLEMENTED ----------------------------------------------------------------------------------------------
+void daa(CPU &cpu, Memory &mem, uint8_t opcode)
 {
-    // TO BE IMPLEMENTED
+    uint8_t adjustment = 0;
+    uint16_t temp_A = cpu.A;
+    bool ADDITION = !(cpu.getSubtract());
+
+    if ((ADDITION && (temp_A & 0x0F) > 9) || cpu.getHalfCarry())
+        adjustment |= 0x06;
+
+    if ((ADDITION && temp_A > 0x99) || cpu.getCarry())
+    {
+        adjustment |= 0x60;
+        cpu.setCarry(true);
+    }
+
+    if (ADDITION)
+    {
+        temp_A += adjustment;
+    }
+    else
+    {
+        temp_A -= adjustment;
+    }
+
+    cpu.A = (uint8_t)(temp_A & 0xFF);
+
+    cpu.setZero(cpu.A == 0);
+    cpu.setHalfCarry(false);
+
+    cpu.PC += 1;
+    cpu.cycles += 4;
 }
 
 void cpl(CPU &cpu, Memory &mem, uint8_t opcode) // TO BE IMPLEMENTED ----------------------------------------------------------------------------------------------
