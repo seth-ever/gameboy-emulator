@@ -271,24 +271,49 @@ void ld_r8_imm8(CPU &cpu, Memory &mem, uint8_t opcode)
         cpu.cycles += 8;
 }
 
-void rlca(CPU &cpu, Memory &mem, uint8_t opcode) // TO BE IMPLEMENTED ----------------------------------------------------------------------------------------------
+void rlca(CPU &cpu, Memory &mem, uint8_t opcode)
 {
-    // TO BE IMPLEMENTED
+    uint8_t old_b7 = (cpu.A >> 7) & 1;
+
+    cpu.A = (uint8_t)((cpu.A << 1) | (cpu.A >> 7));
+    cpu.setCarry(old_b7);
+
+    cpu.PC += 1;
+    cpu.cycles += 4;
 }
 
-void rrca(CPU &cpu, Memory &mem, uint8_t opcode) // TO BE IMPLEMENTED ----------------------------------------------------------------------------------------------
+void rrca(CPU &cpu, Memory &mem, uint8_t opcode)
 {
-    // TO BE IMPLEMENTED
+    uint8_t old_b1 = cpu.A & 1;
+
+    cpu.A = (uint8_t)((cpu.A >> 1) | (cpu.A << 7));
+    cpu.setCarry(old_b1);
+
+    cpu.PC += 1;
+    cpu.cycles += 4;
 }
 
-void rla(CPU &cpu, Memory &mem, uint8_t opcode) // TO BE IMPLEMENTED ----------------------------------------------------------------------------------------------
+void rla(CPU &cpu, Memory &mem, uint8_t opcode)
 {
-    // TO BE IMPLEMENTED
+    uint8_t old_b7 = (cpu.A >> 7) & 1;
+    uint8_t old_carry = cpu.getCarry();
+
+    cpu.A = (uint8_t)((cpu.A << 1) | old_carry);
+    cpu.setCarry(old_b7);
+
+    cpu.PC += 1;
+    cpu.cycles += 4;
 }
 
-void rra(CPU &cpu, Memory &mem, uint8_t opcode) // TO BE IMPLEMENTED ----------------------------------------------------------------------------------------------
+void rra(CPU &cpu, Memory &mem, uint8_t opcode)
 {
-    // TO BE IMPLEMENTED
+    uint8_t old_b0 = cpu.A & 1;
+    uint8_t old_carry = cpu.getCarry();
+
+    cpu.A = (uint8_t)((cpu.A >> 1) | (old_carry << 7));
+
+    cpu.PC += 1;
+    cpu.cycles += 4;
 }
 
 void daa(CPU &cpu, Memory &mem, uint8_t opcode) // TO BE IMPLEMENTED ----------------------------------------------------------------------------------------------
