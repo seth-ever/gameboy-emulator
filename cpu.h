@@ -43,6 +43,7 @@ struct CPU
     uint64_t cycles = 0; // Cycle counts since reset, for syncing processes
 
     bool halted = false;
+    bool stopped = false;
     bool locked = false;
 
     void

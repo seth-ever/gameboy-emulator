@@ -349,34 +349,82 @@ void daa(CPU &cpu, Memory &mem, uint8_t opcode)
     cpu.cycles += 4;
 }
 
-void cpl(CPU &cpu, Memory &mem, uint8_t opcode) // TO BE IMPLEMENTED ----------------------------------------------------------------------------------------------
+void cpl(CPU &cpu, Memory &mem, uint8_t opcode)
 {
-    // TO BE IMPLEMENTED
+    cpu.A = cpu.A ^ 0xFF;
+
+    cpu.setSubtract(true);
+    cpu.setHalfCarry(true);
+
+    cpu.PC += 1;
+    cpu.cycles += 4;
 }
 
-void scf(CPU &cpu, Memory &mem, uint8_t opcode) // TO BE IMPLEMENTED ----------------------------------------------------------------------------------------------
+void scf(CPU &cpu, Memory &mem, uint8_t opcode)
 {
-    // TO BE IMPLEMENTED
+    cpu.setSubtract(false);
+    cpu.setHalfCarry(false);
+    cpu.setCarry(true);
+
+    cpu.PC += 1;
+    cpu.cycles += 4;
 }
 
-void ccf(CPU &cpu, Memory &mem, uint8_t opcode) // TO BE IMPLEMENTED ----------------------------------------------------------------------------------------------
+void ccf(CPU &cpu, Memory &mem, uint8_t opcode)
 {
-    // TO BE IMPLEMENTED
+    cpu.setSubtract(false);
+    cpu.setHalfCarry(false);
+    cpu.setCarry(!(cpu.getCarry()));
+
+    cpu.PC += 1;
+    cpu.cycles += 4;
 }
 
-void jr_imm8(CPU &cpu, Memory &mem, uint8_t opcode) // TO BE IMPLEMENTED ----------------------------------------------------------------------------------------------
+void jr_imm8(CPU &cpu, Memory &mem, uint8_t opcode)
 {
-    // TO BE IMPLEMENTED
+    int8_t offset = (int8_t)mem.read(cpu.PC + 1);
+
+    cpu.PC += 2 + offset;
+
+    cpu.cycles += 12;
 }
 
 void jr_cond_imm8(CPU &cpu, Memory &mem, uint8_t opcode) // TO BE IMPLEMENTED ----------------------------------------------------------------------------------------------
 {
-    // TO BE IMPLEMENTED
+    uint8_t condition_code = (opcode >> 3) & 0x03;
+    bool condition = false;
+    switch (condition_code)
+    {
+    case 0: // NZ
+        condition = !(cpu.getZero());
+        break;
+    case 1: // Z
+        condition = cpu.getZero();
+        break;
+    case 2: // NC
+        condition = !(cpu.getCarry());
+        break;
+    case 3: // C
+        condition = cpu.getCarry();
+        break;
+    }
+
+    int8_t offset = (int8_t)mem.read(cpu.PC + 1);
+
+    cpu.PC += 2;
+    cpu.cycles += 8;
+    if (condition)
+    {
+        cpu.PC += offset;
+        cpu.cycles += 4;
+    }
 }
 
 void stop(CPU &cpu, Memory &mem, uint8_t opcode) // TO BE IMPLEMENTED ----------------------------------------------------------------------------------------------
 {
-    // TO BE IMPLEMENTED
+    cpu.stopped = true;
+    cpu.PC += 2;
+    cpu.cycles += 4;
 }
 
 // BLOCK 1 8-BIT REGISTER-TO-REGISTER LOADS
@@ -764,6 +812,9 @@ void CPU::reset()
 void CPU::step(Memory &memory)
 {
     if (locked)
+        return;
+
+    if (stopped)
         return;
 
     uint8_t opcode = memory.read(cpu.PC);
