@@ -389,7 +389,7 @@ void jr_imm8(CPU &cpu, Memory &mem, uint8_t opcode)
     cpu.cycles += 12;
 }
 
-void jr_cond_imm8(CPU &cpu, Memory &mem, uint8_t opcode) // TO BE IMPLEMENTED ----------------------------------------------------------------------------------------------
+void jr_cond_imm8(CPU &cpu, Memory &mem, uint8_t opcode)
 {
     uint8_t condition_code = (opcode >> 3) & 0x03;
     bool condition = false;
@@ -420,7 +420,7 @@ void jr_cond_imm8(CPU &cpu, Memory &mem, uint8_t opcode) // TO BE IMPLEMENTED --
     }
 }
 
-void stop(CPU &cpu, Memory &mem, uint8_t opcode) // TO BE IMPLEMENTED ----------------------------------------------------------------------------------------------
+void stop(CPU &cpu, Memory &mem, uint8_t opcode)
 {
     cpu.stopped = true;
     cpu.PC += 2;
@@ -428,13 +428,27 @@ void stop(CPU &cpu, Memory &mem, uint8_t opcode) // TO BE IMPLEMENTED ----------
 }
 
 // BLOCK 1 8-BIT REGISTER-TO-REGISTER LOADS
-void ld_r8_r8(CPU &cpu, Memory &mem, uint8_t opcode) // TO BE IMPLEMENTED ----------------------------------------------------------------------------------------------
+void ld_r8_r8(CPU &cpu, Memory &mem, uint8_t opcode)
 {
-    // TO BE IMPLEMENTED
+    uint8_t source = opcode & 0x07;
+    uint8_t destination = (opcode >> 3) & 0x07;
+
+    cpu.setRegister8(destination, cpu.getRegister8(source, mem), mem);
+
+    cpu.PC += 1;
+    cpu.cycles += 4;
+    if (source == 6 || destination == 6)
+    {
+        cpu.cycles += 4;
+    }
 }
 void halt(CPU &cpu, Memory &mem, uint8_t opcode) // TO BE IMPLEMENTED ----------------------------------------------------------------------------------------------
 {
-    // TO BE IMPLEMENTED
+
+    cpu.halted = true;
+
+    cpu.PC += 1;
+    cpu.cycles += 4;
 }
 
 // BLOCK 2 8-BIT ARITHMETIC
@@ -815,7 +829,16 @@ void CPU::step(Memory &memory)
         return;
 
     if (stopped)
+    {
+        // needs further dev most likely
         return;
+    }
+
+    if (halted)
+    {
+        // needs further dev most likely
+        return;
+    }
 
     uint8_t opcode = memory.read(cpu.PC);
     opcode_table[opcode](*this, memory, opcode);
